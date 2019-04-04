@@ -1,4 +1,8 @@
 module.exports.init = function(app)
 {
-	console.log(__dirname+"hello");
+	
 }
+
+
+module.exports.Model = require('./schema.js');
+module.exports.Route = require('./route.js');
