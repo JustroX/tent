@@ -21,7 +21,6 @@ mw.make = function(name,...args) //middlewares
 			}
 			args[i](req,res,_next);
 		};
-
 		exec(0)
 	};
 	if(name) mw.util[name]  = a;
@@ -46,8 +45,8 @@ mw.look = function(val)
 }
 mw.Model = function(model,config,bad)
 {
-	let ModelSchema = Schema.get(model[0] || model);
-	let ModelEndpoint  = model[1];  
+	let ModelSchema = Schema.get(model);
+	let POPULATE = ModelSchema.config.populate;
 	let a =  
 	{
 		create : function(req,res,next)
@@ -57,10 +56,18 @@ mw.Model = function(model,config,bad)
 		},
 		load : function(req,res,next)
 		{
-			ModelSchema.findById( ( req.tent.id && config && req.tent[config]) || req.tent.needle,function(err,model)
+			let doc_id = req.tent.id;
+			let q = ModelSchema.find({_id: doc_id},req.tent.param.fields.join(' '));
+
+			for(let i in POPULATE)
+				q  = q.populate(i,POPULATE[i]);
+
+			q.exec(function(err,model)
 			{
 				if(err) return res.send({ err: "Database Error" , code : 500 });
-				req.tent.needle = model;
+				if(!model[0]) return res.send({ err: "Document not found.", code: 404});
+
+				req.tent.needle = model[0];
 				next();
 			});
 		},
@@ -78,15 +85,36 @@ mw.Model = function(model,config,bad)
 			if( typeof config == 'function' )
 			{
 				config(req, res, next);
-				next();
 			}
 		},
 		list : function(req,res,next)
 		{
-			ModelSchema.find({}, function(err, docs)
+			let q = ModelSchema.find(
+				req.tent.param.filter,
+				req.tent.param.fields.join(' ')
+			)
+			.sort ( req.tent.param.sort)
+			.limit( req.tent.param.limit)
+			.skip ( req.tent.param.limit*req.tent.param.offset);
+			
+			for(let i in POPULATE)
+				q = q.populate(i,POPULATE[i]);
+
+			if(req.tent.param.options)
 			{
-				if(err) return res.send({ err: "Database Error" , code : 500 });
-				req.tent.needle  = docs;
+				let opt = {};
+				ModelSchema.count({},function(err,count)
+				{					
+					opt.collectionCount = count;
+					req.tent.needle = opt;
+					next();
+				});
+			}
+			else
+			q.exec(function(err,docs)
+			{
+				if(err) return res.send({ err: "Database Error" , code: 500 });
+				req.tent.needle = docs;
 				next();
 			});
 		},
@@ -94,15 +122,15 @@ mw.Model = function(model,config,bad)
 		{
 			if( typeof config == 'function' )
 			{
-				if(!config()) return res.send(bad);
+				if(!config(req)) return res.send(bad);
 				next();
 			}
 		},
 		delete: function(req,res,next)
 		{
-			ModelSchema.deleteOne({ _id: (( req.tent.id && config && req.tent[config]) || req.tent.needle) },function(err)
+			ModelSchema.deleteOne({ _id: req.tent.id },function(err)
 			{
-				if(err) return res.send({ err : "Unknown Error" });
+				if(err) return res.send({ err : "Unknown Error", code: 500 });
 				req.tent.needle = { message: "success", code: "200" };
 				next();
 			});
@@ -110,7 +138,7 @@ mw.Model = function(model,config,bad)
 
 		assignBody : function(req,res,next)
 		{
-			let q = util.sanitize(req,ModelSchema.permissions);
+			let q = util.sanitize(req,ModelSchema.config.permissions);
 			for(let i in q)
 				req.tent.needle.set(i,q[i]);
 			next();
@@ -122,96 +150,303 @@ mw.Model = function(model,config,bad)
 		},
 
 
-		parseParams : function()
+		parseParams : function(req,res,next)
 		{
-			return function(req,res,next)
-			{
-				req.tent.param = {};
-				req.tent.param.fields = util.fields(req,ModelSchema.permissions,ModelEndpoint);
-				req.tent.param.sort   = util.sort  (req,ModelSchema.permissions);
-				req.tent.param.filter = util.filter(req,ModelSchema.permissions);
-				next();
-			}
+			req.tent.param = {};
+			req.tent.param.fields = util.fields(req,ModelSchema.config.permissions);
+			req.tent.param.sort   = util.sort  (req,ModelSchema.config.permissions);
+			req.tent.param.filter = util.filter(req,ModelSchema.config.permissions);
+			
+			req.tent.param.options = req.query.option;
+			req.tent.param.limit   =  (req.query.limit  || 10)-1+1;
+			req.tent.param.offset  =  (req.query.offset || 0) -1+1;
+
+			next();
+		},
+
+		hideFields: function(req,res,next)
+		{
+			req.tent.needle = util.hide_fields(req.tent.needle,ModelSchema.config.permissions);
+			next();
 		},
 
 
-		validateFields: function()
+		validateFields:  function(req,res,next)
 		{
-			return function(req,res,next)
+			let missing_fields = util.validate_fields(req,ModelSchema.config.required || []);
+			if(missing_fields.length)
 			{
-				if(!util.validate_fields(req,ModelSchema.permissions))
-					res.send({ code: 400, err: "Invalid request." });
+				return res.send({ code: 400, err: "Invalid request." , missing_fields: missing_fields });
 			}
+			next();
 		}
-
-
-
 	};
 
 	return a;
 }
 
-
 //default API  functions
 
-mw.api = {};
+mw.api = { endpoint:{} };
 
 mw.api.init = function(req,res,next)
 {
 	req.tent = req.tent || {};
 
 	req.tent.id = req.params.id;
-	req.tent.endpoint = req.params.field_id;
+	req.tent.field_id = req.params.field_id;
 
 	req.tent.body = req.body;
+
+	next();
 }
 
-mw.api.post = function(model,...mw)
+mw.api.post = function(model,...mc)
 {
+
+	let mw_model = mw.Model(model);
 	return mw.make(null, mw.api.init,
-						 mw.Model(model).create,
-						 mw.Model(model).assignBody,
-						 mw.Model(model).save,
-						 ...mw,
-						 mw.Model(model).done );
+						 mw_model.validateFields,
+						 mw_model.create,
+						 mw_model.assignBody,
+						 mw_model.save,
+						 ...mc,
+						 mw_model.hideFields,
+						 mw_model.done );
 }
 
-mw.api.put = function(model,...mw)
+mw.api.put = function(model,...mc)
 {
+	let mw_model = mw.Model(model);
 	return mw.make(null, mw.api.init,
-						 mw.Model(model).load,
-						 mw.Model(model).assignBody,
-						 mw.Model(model).save,
-						 ...mw,
-						 mw.Model(model).done ;
+						 mw_model.load,
+						 mw_model.assignBody,
+						 mw_model.save,
+						 ...mc,
+						 mw_model.hideFields,
+						 mw_model.done );
 }
 
-mw.api.list = function(model,...mw)
+mw.api.list = function(model,...mc)
 {
+	let mw_model = mw.Model(model);
 	return mw.make(null, mw.api.init,
-						 mw.Model(model).list,
-						 ...mw,
-						 mw.Model(model).done	);
+						 mw_model.parseParams,
+						 mw_model.list,
+						 // ...mc,
+						 mw_model.done	);
 }
 
-mw.api.get = function(model,...mw)
+mw.api.get = function(model,...mc)
 {
+	let mw_model = mw.Model(model);
 	return mw.make(null, mw.api.init,
-						 mw.Model(model).load,
-						 ...mw,
-						 mw.Model(model).done );
+						 mw_model.parseParams,
+						 mw_model.load,
+						 ...mc,
+						 mw_model.hideFields,
+						 mw_model.done );
 }
 
-mw.api.delete = function(model,...mw)
+mw.api.delete = function(model,...mc)
 {
+	let mw_model = mw.Model(model);
 	return mw.make(null, mw.api.init,
-						 mw.Model(model).load,
-						 mw.Model(model).delete,
-						 ...mw,
-						 mw.Model(model).done );
+						 mw_model.load,
+						 mw_model.delete,
+						 ...mc,
+						 mw_model.done );
 }
 
 
+mw.Endpoint = function(model,endpoint,config,bad)
+{
+	let ModelSchema =  Schema.get(model);
+	let POPULATE = ModelSchema.config.endpoints[endpoint].populate;
+
+	let a = 
+	{
+		p : mw.Model(model),
+		create : function(req,res,next)
+		{
+			req.tent.endpoint  = {};
+			next();
+		},
+		push : function(req,res,next)
+		{
+			let b = req.tent.endpoint;
+			req.tent.needle[endpoint].push(b);
+			next();
+		},
+		
+		prepare : function(req,res,next)
+		{
+			let doc_id = req.tent.id;
+			let q = ModelSchema.find({_id: doc_id});
+
+			for(let i in POPULATE)
+				q  = q.populate(endpoint+"."+i,POPULATE[i]);
+
+			q.exec(function(err,model)
+			{
+				if(err) return res.send({ err: "Database Error" , code : 500 });
+				if(!model[0]) return res.send({ err: "Document not found.", code: 404});
+
+				req.tent.needle = model[0];
+				next();
+			});
+		},
+
+		update: function(req,res,next)
+		{
+			let a;
+			for(let  i in req.tent.needle.toObject()[endpoint])
+			if(req.tent.needle.toObject()[endpoint][i]._id.equals(req.tent.field_id))
+			{
+				a = i; break;
+			}
+			for(let i in req.tent.endpoint)
+			{
+				req.tent.needle[endpoint][a][i] = req.tent.endpoint[i];
+			}
+			next();
+		},
+
+		load : function(req,res,next)
+		{
+			let a = {};
+			for(let  i in req.tent.needle.toObject()[endpoint])
+			{
+				if(req.tent.needle.toObject()[endpoint][i]._id.equals(req.tent.field_id))
+					a = req.tent.needle[endpoint][i];
+			}
+			req.tent.endpoint = a;
+			next();
+		},
+		list : function(req,res,next)
+		{
+			req.tent.endpoint = req.tent.needle[endpoint];
+			next();
+		},
+		check: function(req,res,next)
+		{
+			if( typeof config == 'function' )
+			{
+				if(!config(req)) return res.send(bad);
+				next();
+			}
+		},
+		delete: function(req,res,next)
+		{	
+			for(let  i in req.tent.needle.toObject()[endpoint])
+				if(req.tent.needle.toObject()[endpoint][i]._id.equals(req.tent.field_id))
+				{
+					req.tent.needle[endpoint].splice(i,1);
+					break;
+				}
+			req.tent.endpoint = { message: "success", code: "200" };
+			next();
+		},
+
+		assignBody : function(req,res,next)
+		{
+			let q = util.sanitize(req,ModelSchema.config.endpoints[endpoint].permissions);
+			for(let i in q)
+				req.tent.endpoint[i] = q[i];
+			next();
+		},
+
+		hideFields: function(req,res,next)
+		{
+			req.tent.endpoint = util.hide_fields(req.tent.endpoint,ModelSchema.config.endpoints[endpoint].permissions);
+			next();
+		},
+
+		done: function(req,res,next)
+		{
+			res.send(req.tent.endpoint);
+		},
+
+		validateFields:  function(req,res,next)
+		{
+			let missing_fields = util.validate_fields(req,ModelSchema.config.endpoints[endpoint].required || []);
+			if(missing_fields.length)
+			{
+				return res.send({ code: 400, err: "Invalid request." , missing_fields: missing_fields });
+			}
+			next();
+		}
+
+	};
+
+	return a;
+}
+
+mw.api.endpoint.list = function(model,endpoint,...mc)
+{
+	let ep = mw.Endpoint(model,endpoint);
+	return mw.make(null, mw.api.init,
+						 ep.prepare,
+						 ep.list,
+						 // ...mc,
+						 ep.done);
+}
+
+mw.api.endpoint.get = function(model,endpoint,...mc)
+{
+	let ep = mw.Endpoint(model,endpoint);
+	return mw.make(null, mw.api.init,
+						 ep.prepare,
+						 ep.load,
+						 ...mc,
+						 ep.done);
+	
+}
+mw.api.endpoint.post = function(model,endpoint,...mc)
+{
+	let ep = mw.Endpoint(model,endpoint);
+	let mw_model = mw.Model(model);
+	return mw.make(null, mw.api.init,
+						 ep.prepare,
+						 ep.validateFields,
+						 ep.create,
+						 ep.assignBody,
+						 ep.push,
+						 mw_model.save,
+						 ...mc,
+						 ep.hideFields,
+						 ep.done);
+
+}
+mw.api.endpoint.put = function(model,endpoint,...mc)
+{
+	let ep = mw.Endpoint(model,endpoint);
+	let mw_model = mw.Model(model);
+	return mw.make(null, mw.api.init,
+						 ep.prepare,
+						 ep.load,
+						 ep.assignBody,
+						 ep.update,
+						 mw_model.save,
+						 ...mc,
+						 ep.hideFields,
+						 ep.done);
+	
+}
+
+mw.api.endpoint.delete = function(model,endpoint,...mc)
+{
+	
+	let ep = mw.Endpoint(model,endpoint);
+	let mw_model = mw.Model(model);
+	return mw.make(null, mw.api.init,
+						 ep.prepare,
+						 ep.load,
+						 ep.delete,
+						 mw_model.save,
+						 ...mc,
+						 ep.done);
+}
 
 
 var util = 
@@ -221,7 +456,7 @@ var util =
 		let fields = [];
 		if(req.query.fields)
 		{
-			var q_fields = req.query.fields.split(",");
+			let q_fields = req.query.fields.split(",");
 			for(let i of q_fields)
 			{
 				if(permissions[i] && permissions[i]&1)
@@ -230,11 +465,18 @@ var util =
 				}
 			}
 		}
+		if(fields.length==0) 		
+			for(let i in permissions)
+			{
+				if((permissions[i]&1)==0)
+				{
+					fields.push('-'+i);
+				}
+			}
 		if(endpoint)
 			for(let i in fields)
 				fields[i] = endpoint +"."+fields[i];
-		if(fields.length==0) 
-			fields = ['-__v','-private.local.password'];
+		fields.push('-__v');
 		return fields;
 
 	},
@@ -255,7 +497,7 @@ var util =
 			}
 		}
 		return sort;
-	}
+	},
 
 	filter : function(req,permissions)
 	{
@@ -369,21 +611,20 @@ var util =
 		return a;
 	},
 
-	validate_fields : function(req,permissions)
+	validate_fields : function(req,required)
 	{
 		let body = req.body;
 
-		let complete = true;
-		for(let i in permissions)
+		let missing = [];
+		for(let i of required)
 		{
-			if(permissions[i]&2)
-			{
-				complete &= body[i] != null
-				if(body[i] == "$n_null")
-					body[i] = null;
-			}
+			if( body[i] == null )
+				missing.push(i);
+			else
+			if(body[i] == "$n_null")
+				body[i] = null;
 		}
 
-		return complete
+		return missing;
 	}
 }

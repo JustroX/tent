@@ -3,10 +3,6 @@ var mongoose  = require('mongoose');
 var Schema = mongoose.Schema;
 var Models =  {};
 
-
-var app;
-
-
 class Model
 {
 	constructor(name)
@@ -28,6 +24,7 @@ class Model
 		this.config		 = raw.config;
 		this.methods     = raw.methods;
 		this.virtual     = raw.virtual;
+		this.endpoints     = raw.endpoints;
 
 		return this;
 	}
@@ -47,7 +44,7 @@ class Model
 			this.mongoose_schema.virtual(i).get(this.virtual[i].get).set(this.virtual[i].set);
 
 		this.mongoose_model = mongoose.model(this.name, this.mongoose_schema);
-		mongoose_model.config = 
+		this.mongoose_model.config = 
 		{
 			permissions: this.permissions,
 			populate   : this.populate,
@@ -62,20 +59,13 @@ class Model
 
 	route(cb)
 	{
-		let a = 
-		{
-			compile: function(){cb(app);}
-		}
-		return a;
+		this.router = cb;
+		return this;
 	}
 
 
 }
 
-module.exports = function(express)
-{
-	app = express;
-}
 
 
 module.exports.get = function(model_name)
@@ -85,5 +75,10 @@ module.exports.get = function(model_name)
 
 module.exports.new = function( model_name )
 {
-	return new Model();
+	return new Model(model_name);
+}
+
+module.exports.all = function()
+{
+	return Models;
 }
