@@ -233,6 +233,7 @@ mw.api.put = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.assignBody,
 						 mw_model.save,
@@ -270,6 +271,7 @@ mw.api.delete = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,3),
 						 mw.api.init,
+						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.delete,
 						 ...mc,
