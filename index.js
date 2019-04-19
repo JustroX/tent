@@ -14,6 +14,9 @@ module.exports.init = function(app,done)
 	{
 		let nrouter = express.Router();
 
+		if(models[i].mw.length)
+		nrouter.use( models[i].mw );
+
 		if(!models[i].router)
 		models[i].router = function(route)
 		{

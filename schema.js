@@ -9,6 +9,7 @@ class Model
 	{
 		this.name = name;
 		this.schema = {};
+		this.mw 	= [];
 
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
 
@@ -61,6 +62,12 @@ class Model
 	{
 		this.router = cb;
 		return this;
+	}
+
+	use(mw)
+	{
+		if(mw)
+		this.mw.push(mw);
 	}
 
 
