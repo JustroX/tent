@@ -10,6 +10,7 @@ class Model
 		this.name = name;
 		this.schema = {};
 		this.mw 	= [];
+		this.mwAPI  = [[],[],[],[]];
 
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
 
@@ -68,6 +69,16 @@ class Model
 	{
 		if(mw)
 		this.mw.push(mw);
+
+		return this;
+	}
+
+	useAPI(mw,num)
+	{
+		if(mw)
+		this.mwAPI[num].push(mw);
+
+		return this;
 	}
 
 
