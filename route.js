@@ -170,6 +170,12 @@ mw.Model = function(model,config,bad)
 			next();
 		},
 
+		hideFieldsList: function(req,res,next)
+		{
+			req.tent.needle = util.hide_fields_list(req.tent.needle,ModelSchema.config.permissions);
+			next();
+		},
+
 
 		validateFields:  function(req,res,next)
 		{
@@ -242,6 +248,7 @@ mw.api.list = function(model,...mc)
 						 mw.api.init,
 						 mw_model.parseParams,
 						 mw_model.list,
+						 mw_model.hideFieldsList,
 						 // ...mc,
 						 mw_model.done	);
 }
@@ -624,6 +631,14 @@ var util =
 				a[i] = obj[i];
 			}
 		}
+		return a;
+	},
+
+	hide_fields_list : function(list,permissions)
+	{
+		let a =[];
+		for(let i in list)
+			a.push(util.hide_fields(list[i],permissions))
 		return a;
 	},
 
