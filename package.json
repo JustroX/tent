@@ -1,6 +1,6 @@
 {
   "name": "justrox-tent",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "MEAN stack API framework",
   "main": "index.js",
   "scripts": {
