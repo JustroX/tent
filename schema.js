@@ -64,6 +64,12 @@ class Model
 		this.router = cb;
 		return this;
 	}
+	
+	routeExtend(cb)
+	{
+		this.routerExtend = cb;
+		return this;
+	}
 
 	use(mw)
 	{

@@ -39,6 +39,7 @@ module.exports.init = function(app,done)
 		}
 
 		models[i].router(nrouter);
+		models[i].routerExtend(nrouter);
 		router.use('/'+i.toLowerCase(),nrouter);
 	}
 
