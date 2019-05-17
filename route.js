@@ -177,7 +177,8 @@ mw.Model = function(model,config,bad)
 
 		hideFieldsList: function(req,res,next)
 		{
-			req.tent.needle = util.hide_fields_list(req.tent.needle,ModelSchema.config.permissions);
+			if(Array.isArray(req.tent.needle))
+				req.tent.needle = util.hide_fields_list(req.tent.needle,ModelSchema.config.permissions);
 			next();
 		},
 
