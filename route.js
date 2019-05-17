@@ -108,7 +108,7 @@ mw.Model = function(model,config,bad)
 			if(req.tent.param.options)
 			{
 				let opt = {};
-				ModelSchema.count({},function(err,count)
+				ModelSchema.count(req.tent.param.filter,function(err,count)
 				{					
 					opt.collectionCount = count;
 					req.tent.needle = opt;
