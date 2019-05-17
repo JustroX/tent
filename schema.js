@@ -23,6 +23,7 @@ class Model
 		this.permissions = raw.permissions;
 		this.required    = raw.required;
 		this.populate    = raw.populate;
+		this.deep        = raw.deep;
 		this.config		 = raw.config;
 		this.methods     = raw.methods;
 		this.virtual     = raw.virtual;
@@ -50,6 +51,7 @@ class Model
 		{
 			permissions: this.permissions,
 			populate   : this.populate,
+			deep	   : this.deep,
 			required   : this.required,
 			endpoints  : this.endpoints,
 			endpoints_permissions: this.endpoints_permissions,

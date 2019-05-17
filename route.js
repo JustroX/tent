@@ -47,6 +47,7 @@ mw.Model = function(model,config,bad)
 {
 	let ModelSchema = Schema.get(model);
 	let POPULATE = ModelSchema.config.populate;
+	let DEEP 	 = ModelSchema.config.deep;
 	let a =  
 	{
 		create : function(req,res,next)
@@ -61,6 +62,8 @@ mw.Model = function(model,config,bad)
 
 			for(let i in POPULATE)
 				q  = q.populate(i,POPULATE[i]);
+			for(let i in DEEP)
+				q  = q.deepPopulate(i,DEEP[i]);
 
 			q.exec(function(err,model)
 			{
@@ -99,6 +102,8 @@ mw.Model = function(model,config,bad)
 			
 			for(let i in POPULATE)
 				q = q.populate(i,POPULATE[i]);
+			for(let i in DEEP)
+				q  = q.deepPopulate(i,DEEP[i]);
 
 			if(req.tent.param.options)
 			{
@@ -283,6 +288,7 @@ mw.Endpoint = function(model,endpoint,config,bad)
 {
 	let ModelSchema =  Schema.get(model);
 	let POPULATE = ModelSchema.config.endpoints[endpoint].populate;
+	let DEEP 	 = ModelSchema.config.endpoints[endpoint].deep;
 
 	let a = 
 	{
@@ -306,6 +312,8 @@ mw.Endpoint = function(model,endpoint,config,bad)
 
 			for(let i in POPULATE)
 				q  = q.populate(endpoint+"."+i,POPULATE[i]);
+			for(let i in DEEP)
+				q  = q.deepPopulate(endpoint+"."+i,DEEP[i]);
 
 			q.exec(function(err,model)
 			{
@@ -544,6 +552,11 @@ var util =
 						a[b[0]] = { $regex: new RegExp(b[1]) , $options: 'i' };
 						item.or.push(a);
 					}
+				}
+				else
+				if(val.length==1 && val[0].substring(0,3)=="dt_")
+				{
+					item.set = new Date(val[0].substring(3));
 				}
 				else
 				if(val.length==1 && val[0].substring(0,3)=="rx_")
