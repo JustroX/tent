@@ -611,9 +611,9 @@ var util =
 			{
 				query[i.field] = {};
 				if(i.gte)
-					query[i.field].$gte = i.gte ;
+					query[i.field].$gte = parseFloat(i.gte) ;
 				if(i.lte)
-					query[i.field].$lte = i.lte ;
+					query[i.field].$lte = parseFloat(i.lte) ;
 			}
 		}
 		return query;
