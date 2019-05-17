@@ -46,12 +46,37 @@ class Model
 		for(let i in this.virtual)
 			this.mongoose_schema.virtual(i).get(this.virtual[i].get).set(this.virtual[i].set);
 
+		//parse populate
+		let populate = [];
+		for(let i in this.populate)
+		{
+			if( typeof this.populate[i] == "string" )
+				populate.push({ path: i, select: this.populate[i] });
+			else
+			{
+				this.populate[i].path = i;
+				populate.push( this.populate[i] );
+			}
+		}
+		//parse deep
+		let deep = [];
+		for(let i in this.deep)
+		{
+			if( typeof this.deep[i] == "string" )
+				deep.push({ path: i, select: this.deep[i] });
+			else
+			{
+				this.deep[i].path = i;
+				deep.push( this.deep[i] );
+			}
+		}
+
 		this.mongoose_model = mongoose.model(this.name, this.mongoose_schema);
 		this.mongoose_model.config = 
 		{
 			permissions: this.permissions,
-			populate   : this.populate,
-			deep	   : this.deep,
+			populate   : populate,
+			deep	   : deep,
 			required   : this.required,
 			endpoints  : this.endpoints,
 			endpoints_permissions: this.endpoints_permissions,

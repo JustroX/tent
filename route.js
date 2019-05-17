@@ -61,9 +61,9 @@ mw.Model = function(model,config,bad)
 			let q = ModelSchema.find({_id: doc_id},req.tent.param.fields.join(' '));
 
 			for(let i in POPULATE)
-				q  = q.populate(i,POPULATE[i]);
+				q  = q.populate(POPULATE[i]);
 			for(let i in DEEP)
-				q  = q.deepPopulate(i,DEEP[i]);
+				q  = q.deepPopulate(DEEP[i]);
 
 			q.exec(function(err,model)
 			{
@@ -101,9 +101,9 @@ mw.Model = function(model,config,bad)
 			.skip ( req.tent.param.limit*req.tent.param.offset);
 			
 			for(let i in POPULATE)
-				q = q.populate(i,POPULATE[i]);
+				q = q.populate(POPULATE[i]);
 			for(let i in DEEP)
-				q  = q.deepPopulate(i,DEEP[i]);
+				q  = q.deepPopulate(DEEP[i]);
 
 			if(req.tent.param.options)
 			{
