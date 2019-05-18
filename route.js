@@ -48,6 +48,7 @@ mw.Model = function(model,config,bad)
 	let ModelSchema = Schema.get(model);
 	let POPULATE = ModelSchema.config.populate;
 	let DEEP 	 = ModelSchema.config.deep;
+	let FILLED 	 = ModelSchema.config.filled;
 	let a =  
 	{
 		create : function(req,res,next)
@@ -64,6 +65,8 @@ mw.Model = function(model,config,bad)
 				q  = q.populate(POPULATE[i]);
 			for(let i in DEEP)
 				q  = q.deepPopulate(DEEP[i]);
+			for(let i in FILLED)
+				q  = q.fill(i,FILLED[i]);
 
 			q.exec(function(err,model)
 			{
@@ -104,6 +107,8 @@ mw.Model = function(model,config,bad)
 				q = q.populate(POPULATE[i]);
 			for(let i in DEEP)
 				q  = q.deepPopulate(DEEP[i]);
+			for(let i in FILLED)
+				q  = q.fill(i,FILLED[i]);
 
 			if(req.tent.param.options)
 			{
@@ -290,6 +295,7 @@ mw.Endpoint = function(model,endpoint,config,bad)
 	let ModelSchema =  Schema.get(model);
 	let POPULATE = ModelSchema.config.endpoints[endpoint].populate;
 	let DEEP 	 = ModelSchema.config.endpoints[endpoint].deep;
+	let FILLED 	 = ModelSchema.config.endpoints[endpoint].filled;
 
 	let a = 
 	{
@@ -315,6 +321,8 @@ mw.Endpoint = function(model,endpoint,config,bad)
 				q  = q.populate(endpoint+"."+i,POPULATE[i]);
 			for(let i in DEEP)
 				q  = q.deepPopulate(endpoint+"."+i,DEEP[i]);
+			for(let i in FILLED)
+				q  = q.fill(endpoint+"."+i,FILLED[i]);
 
 			q.exec(function(err,model)
 			{
