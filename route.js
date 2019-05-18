@@ -66,7 +66,7 @@ mw.Model = function(model,config,bad)
 			for(let i in DEEP)
 				q  = q.deepPopulate(DEEP[i]);
 			for(let i in FILLED)
-				q  = q.fill(i,FILLED[i]);
+				q  = q.fill(i,FILLED[i],req);
 
 			q.exec(function(err,model)
 			{
@@ -108,7 +108,7 @@ mw.Model = function(model,config,bad)
 			for(let i in DEEP)
 				q  = q.deepPopulate(DEEP[i]);
 			for(let i in FILLED)
-				q  = q.fill(i,FILLED[i]);
+				q  = q.fill(i,FILLED[i],req);
 
 			if(req.tent.param.options)
 			{
@@ -322,7 +322,7 @@ mw.Endpoint = function(model,endpoint,config,bad)
 			for(let i in DEEP)
 				q  = q.deepPopulate(endpoint+"."+i,DEEP[i]);
 			for(let i in FILLED)
-				q  = q.fill(endpoint+"."+i,FILLED[i]);
+				q  = q.fill(endpoint+"."+i,FILLED[i],req);
 
 			q.exec(function(err,model)
 			{
