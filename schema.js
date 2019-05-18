@@ -25,6 +25,7 @@ class Model
 		this.populate    = raw.populate;
 		this.deep        = raw.deep;
 		this.filled      = raw.filled;
+		this.fill        = raw.fill;
 		this.config		 = raw.config;
 		this.methods     = raw.methods;
 		this.virtual     = raw.virtual;
