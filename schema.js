@@ -45,6 +45,9 @@ class Model
 		//virtuals
 		for(let i in this.virtual)
 			this.mongoose_schema.virtual(i).get(this.virtual[i].get).set(this.virtual[i].set);
+		//fill
+		for(let i in this.fill)
+			this.mongoose_schema.fill(i,this.fill[i]);
 
 		//parse populate
 		let populate = [];
