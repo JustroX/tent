@@ -46,7 +46,7 @@ class Model
 		for(let i in this.static)	this.mongoose_schema.static[i] = this.static[i];
 		//virtuals
 		for(let i in this.virtual)
-			this.mongoose_schema.virtual(i).get(this.virtual[i].get).set(this.virtual[i].set);
+			this.mongoose_schema.virtual(i,this.virtual[i].config).get(this.virtual[i].get).set(this.virtual[i].set);
 		//fill
 		for(let i in this.fill)
 			this.mongoose_schema.fill(i,this.fill[i]);
