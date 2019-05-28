@@ -87,18 +87,46 @@ npm install justrox-tent --save
   [DELETE] /api/user/5cc7c58ac657d641ecadea34
   ```
 
+
 #### 4. Customization
-...
+ To extend functionalities of the framework
 
 
-#####  4.1 Permissions
-...
+#### 4.1 Permissions
+
+You can define if a certain field of a model can be read, updated or deleted.
+
+ Value | View | Add | Edit 
+ --- | --- | --- | --- 
+  0 | 0 | 0 | 0 
+  1 | 1 | 0 | 0 
+  2 | 0 | 1 | 0 
+  3 | 1 | 1 | 0 
+  4 | 0 | 0 | 1 
+  5 | 1 | 0 | 1 
+  6 | 0 | 1 | 1 
+  7 | 1 | 1 | 1 
+
+This is particularly useful when trying to hide values or restrict access to the field.
+```js
+ ... 
+ permissions: 
+ {
+    _id : 1, //readonly field
+    name: 7, //full access field
+    password: 6, // can be initialized and modified, 
+                 // but can not be viewed.
+    
+ }
+ ...
+```
+
 
 #####  4.2 Mongoose Models
 ...
 
 ###### 4.2.1 Virtual Fields
-...
+.
 
  ###### 4.2.2 Populate Fields
 ... 
