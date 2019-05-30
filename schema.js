@@ -11,6 +11,7 @@ class Model
 		this.schema = {};
 		this.mw 	= [];
 		this.mwAPI  = [[],[],[],[]];
+		this.mwAfterModelInit = [];
 
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
 
@@ -46,7 +47,13 @@ class Model
 		for(let i in this.static)	this.mongoose_schema.static[i] = this.static[i];
 		//virtuals
 		for(let i in this.virtual)
-			this.mongoose_schema.virtual(i,this.virtual[i].config).get(this.virtual[i].get).set(this.virtual[i].set);
+		{
+			let a = this.mongoose_schema.virtual(i,this.virtual[i].config);
+			if(this.virtual[i].get )
+			 a.get(this.virtual[i].get)
+			if(this.virtual[i].set )
+			 a.set(this.virtual[i].set);
+		}
 		//fill
 		for(let i in this.fill)
 			this.mongoose_schema.fill(i,this.fill[i]);
@@ -104,19 +111,35 @@ class Model
 		return this;
 	}
 
-	use(mw)
+	use(mw,...args)
 	{
+		if(typeof mw == "string")
+		{
+			if(mw=='before init')
+				this.useAPI(...args);
+			else
+				this.useAPIafter(...args);			
+
+		}
+		else
 		if(mw)
-		this.mw.push(mw);
+			this.mw.push(mw);
 
 		return this;
 	}
 
 	useAPI(mw,num)
 	{
+		console.log(num);
 		if(mw)
 		this.mwAPI[num].push(mw);
 
+		return this;
+	}
+	useAPIafter(mw)
+	{
+		if(mw)
+			this.mwAfterModelInit.push(mw);
 		return this;
 	}
 

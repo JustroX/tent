@@ -49,8 +49,19 @@ mw.Model = function(model,config,bad)
 	let POPULATE = ModelSchema.config.populate;
 	let DEEP 	 = ModelSchema.config.deep;
 	let FILLED 	 = ModelSchema.config.filled;
+	let PERMISSIONS = ModelSchema.config.permissions ;
 	let a =  
 	{
+		init: function(req,res,next)
+		{
+			req.tent.model = {};
+			req.tent.model.name = model;
+			req.tent.model.populate = POPULATE;
+			req.tent.model.deep     = DEEP;
+			req.tent.model.filled   = FILLED;
+			req.tent.model.permissions = PERMISSIONS;
+			next();
+		},
 		create : function(req,res,next)
 		{
 			req.tent.needle = new ModelSchema();
@@ -61,12 +72,12 @@ mw.Model = function(model,config,bad)
 			let doc_id = req.tent.id;
 			let q = ModelSchema.find({_id: doc_id},req.tent.param.fields.join(' '));
 
-			for(let i in POPULATE)
-				q  = q.populate(POPULATE[i]);
-			for(let i in DEEP)
-				q  = q.deepPopulate(DEEP[i]);
-			for(let i in FILLED)
-				q  = q.fill(i,FILLED[i],req);
+			for(let i in req.tent.model.populate)
+				q  = q.populate(req.tent.model.populate[i]);
+			for(let i in req.tent.model.deep)
+				q  = q.deepPopulate(req.tent.model.deep[i]);
+			for(let i in req.tent.model.filled)
+				q  = q.fill(i,req.tent.model.filled[i],req);
 
 			q.exec(function(err,model)
 			{
@@ -103,12 +114,12 @@ mw.Model = function(model,config,bad)
 			.limit( req.tent.param.limit)
 			.skip ( req.tent.param.limit*req.tent.param.offset);
 			
-			for(let i in POPULATE)
-				q = q.populate(POPULATE[i]);
-			for(let i in DEEP)
-				q  = q.deepPopulate(DEEP[i]);
-			for(let i in FILLED)
-				q  = q.fill(i,FILLED[i],req);
+			for(let i in req.tent.model.populate)
+				q = q.populate(req.tent.model.populate[i]);
+			for(let i in req.tent.model.deep)
+				q  = q.deepPopulate(req.tent.model.deep[i]);
+			for(let i in req.tent.model.filled)
+				q  = q.fill(i,req.tent.model.filled[i],req);
 
 			if(req.tent.param.options)
 			{
@@ -148,7 +159,7 @@ mw.Model = function(model,config,bad)
 
 		assignBody : function(req,res,next)
 		{
-			let q = util.sanitize(req,ModelSchema.config.permissions);
+			let q = util.sanitize(req, req.tent.model.permissions );
 			for(let i in q)
 				req.tent.needle.set(i,q[i]);
 			next();
@@ -163,9 +174,9 @@ mw.Model = function(model,config,bad)
 		parseParams : function(req,res,next)
 		{
 			req.tent.param = {};
-			req.tent.param.fields = util.fields(req,ModelSchema.config.permissions);
-			req.tent.param.sort   = util.sort  (req,ModelSchema.config.permissions);
-			req.tent.param.filter = util.filter(req,ModelSchema.config.permissions);
+			req.tent.param.fields = util.fields(req, req.tent.model.permissions );
+			req.tent.param.sort   = util.sort  (req, req.tent.model.permissions );
+			req.tent.param.filter = util.filter(req, req.tent.model.permissions );
 			
 			req.tent.param.options = req.query.option;
 			req.tent.param.limit   =  (req.query.limit  || 10)-1+1;
@@ -176,14 +187,14 @@ mw.Model = function(model,config,bad)
 
 		hideFields: function(req,res,next)
 		{
-			req.tent.needle = util.hide_fields(req.tent.needle,ModelSchema.config.permissions);
+			req.tent.needle = util.hide_fields(req.tent.needle,req.tent.model.permissions );
 			next();
 		},
 
 		hideFieldsList: function(req,res,next)
 		{
 			if(Array.isArray(req.tent.needle))
-				req.tent.needle = util.hide_fields_list(req.tent.needle,ModelSchema.config.permissions);
+				req.tent.needle = util.hide_fields_list(req.tent.needle,req.tent.model.permissions );
 			next();
 		},
 
@@ -196,7 +207,8 @@ mw.Model = function(model,config,bad)
 				return res.send({ code: 400, err: "Invalid request." , missing_fields: missing_fields });
 			}
 			next();
-		}
+		},
+
 	};
 
 	return a;
@@ -206,6 +218,12 @@ mw.Universal = function(model,key)
 {
 	let ModelObj = Schema.all()[model];
 	return ModelObj.mwAPI[key]
+}
+
+mw.UniversalAfter = function(model)
+{
+	let ModelObj = Schema.all()[model];
+	return ModelObj.mwAfterModelInit;
 }
 
 //default API  functions
@@ -230,6 +248,8 @@ mw.api.post = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,1),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 mw_model.validateFields,
 						 mw_model.create,
 						 mw_model.assignBody,
@@ -244,6 +264,8 @@ mw.api.put = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.assignBody,
@@ -258,6 +280,8 @@ mw.api.list = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,0),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 mw_model.parseParams,
 						 mw_model.list,
 						 mw_model.hideFieldsList,
@@ -270,6 +294,8 @@ mw.api.get = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,0),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 mw_model.parseParams,
 						 mw_model.load,
 						 ...mc,
@@ -282,6 +308,8 @@ mw.api.delete = function(model,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,3),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.delete,
@@ -424,6 +452,8 @@ mw.api.endpoint.list = function(model,endpoint,...mc)
 	let ep = mw.Endpoint(model,endpoint);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 ep.init,
+						 ...mw.UniversalAfter(model),
 						 ep.prepare,
 						 ep.list,
 						 // ...mc,
@@ -435,6 +465,8 @@ mw.api.endpoint.get = function(model,endpoint,...mc)
 	let ep = mw.Endpoint(model,endpoint);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 ep.init,
+						 ...mw.UniversalAfter(model),
 						 ep.prepare,
 						 ep.load,
 						 ...mc,
@@ -447,6 +479,8 @@ mw.api.endpoint.post = function(model,endpoint,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 ep.prepare,
 						 ep.validateFields,
 						 ep.create,
@@ -464,6 +498,8 @@ mw.api.endpoint.put = function(model,endpoint,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 ep.prepare,
 						 ep.load,
 						 ep.assignBody,
@@ -482,6 +518,8 @@ mw.api.endpoint.delete = function(model,endpoint,...mc)
 	let mw_model = mw.Model(model);
 	return mw.make(null, ...mw.Universal(model,2),
 						 mw.api.init,
+						 mw_model.init,
+						 ...mw.UniversalAfter(model),
 						 ep.prepare,
 						 ep.load,
 						 ep.delete,
@@ -518,7 +556,8 @@ var util =
 		if(endpoint)
 			for(let i in fields)
 				fields[i] = endpoint +"."+fields[i];
-		fields.push('-__v');
+		if(fields.length==0)
+			fields.push('-__v');
 		return fields;
 
 	},
