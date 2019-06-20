@@ -312,8 +312,8 @@ mw.Model = function(model,config,bad)
 			req.tent.param.strong_sort = strong_sort;
 			
 			req.tent.param.options = req.query.option;
-			req.tent.param.limit   =  (req.query.limit  || 10);
-			req.tent.param.offset  =  (req.query.offset || 0);
+			req.tent.param.limit   =  ( parseInt(req.query.limit)  || 10 );
+			req.tent.param.offset  =  ( parseInt(req.query.offset) || 0  );
 
 			next();
 		},
