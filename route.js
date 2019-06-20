@@ -182,12 +182,7 @@ mw.Model = function(model,config,bad)
 
 			//If reverse population is needed
 			if(Object.keys(req.tent.param.where).length)
-			{
 				await a.reverse_populate(req,res,next);
-			}
-
-
-
 
 			let q = ModelSchema.find(
 				req.tent.param.filter,
@@ -218,6 +213,31 @@ mw.Model = function(model,config,bad)
 			q.exec(function(err,docs)
 			{
 				if(err) return res.send({ err: "Database Error" , code: 500 });
+				
+				function getfield(obj,field)
+				{
+					let cur = obj;
+					let paths =  field.split(".");
+					
+					for(let i of paths)
+					{
+						if(!cur)
+							return 0;
+						cur = cur[i];
+					}
+					
+					return cur;
+				}
+
+				//do strong sorting
+				for(let i in req.tent.param.strong_sort )
+					docs = docs.sort((a,b)=>
+					{
+						a = getfield(a,i);
+						b = getfield(b,i);
+						return 2*( (a>b)^( 1- ((1+req.tent.param.strong_sort[i])>>1) ) )-1 ;
+					});
+
 				req.tent.needle = docs;
 				next();
 			});
@@ -261,7 +281,7 @@ mw.Model = function(model,config,bad)
 		{
 			req.tent.param = {};
 			req.tent.param.fields = util.fields(req, req.tent.model.permissions );
-			req.tent.param.sort   = util.sort  (req, req.tent.model.permissions );
+			req.tent.param.sort   = util.sort  (req, req.tent.model.permissions , ModelInstance );
 			req.tent.param.filter = util.filter(req, req.tent.model.permissions );
 
 			//get post populated filter
@@ -277,10 +297,23 @@ mw.Model = function(model,config,bad)
 				}
 			}
 			req.tent.param.where = where;
+
+			//create a strong sort
+			let strong_sort = {};
+			for( let i in req.tent.param.sort )
+			{
+				let field = ModelInstance._constainsFieldRef(i);
+				if( field )
+				{
+					strong_sort[i] = req.tent.param.sort[i];
+					delete req.tent.param.sort[i];
+				}
+			}
+			req.tent.param.strong_sort = strong_sort;
 			
 			req.tent.param.options = req.query.option;
-			req.tent.param.limit   =  (req.query.limit  || 10)-1+1;
-			req.tent.param.offset  =  (req.query.offset || 0) -1+1;
+			req.tent.param.limit   =  (req.query.limit  || 10);
+			req.tent.param.offset  =  (req.query.offset || 0);
 
 			next();
 		},
@@ -662,7 +695,7 @@ var util =
 
 	},
 
-	sort : function(req,permissions)
+	sort : function(req,permissions,ModelInstance)
 	{
 		let sort = {};
 		if(req.query.sort)
@@ -671,7 +704,7 @@ var util =
 			for(let i of q_fields)
 			{
 				var str = (i[0]=='-')? i.substring(1) : i;
-				if(permissions[str])
+				if(permissions[str] || ( permissions[ModelInstance._constainsFieldRef(str)] ) )
 				{
 					sort[str] = 1 - 2*(i[0]=='-');
 				}
