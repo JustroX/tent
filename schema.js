@@ -3,6 +3,20 @@ var mongoose  = require('mongoose');
 var Schema = mongoose.Schema;
 var Models =  {};
 
+function isAsync (func) {
+    const string = func.toString().trim();
+
+    return !!(
+        // native
+        string.match(/^async /) ||
+        // babel (this may change, but hey...)
+        string.match(/return _ref[^\.]*\.apply/)
+        // insert your other dirty transpiler check
+
+        // there are other more complex situations that maybe require you to check the return line for a *promise*
+    );
+}
+
 class Model
 {
 	constructor(name)
@@ -13,6 +27,8 @@ class Model
 		this.mwAPI  = [[],[],[],[]];
 		this.mwAfterModelInit = [];
 		this.methods_route = [];
+
+		this.fields = {};
 
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
 
@@ -216,17 +232,27 @@ class Model
 		else
 			return this.populate[path].select;
 	}
-}
 
-
-class Field
-{
-	constructor()
+	fieldListen(field,cb)
 	{
-		
+		async function exec(...args)
+		{
+			if(isAsync(cb))
+				return await cb(...args);
+			else
+				return cb(...args);
+		}
+		this.fields[field] = exec;
+		return this;
+	}
+
+	async _onEditField(i,body,req,res)
+	{
+		if(!this.fields[i])
+			return true;
+		return await this.fields[i](body[i],req,res,body);
 	}
 }
-
 
 
 module.exports.get = function(model_name)

@@ -240,11 +240,14 @@ mw.Model = function(model,config,bad)
 			});
 		},
 
-		assignBody : function(req,res,next)
+		assignBody : async function(req,res,next)
 		{
 			let q = util.sanitize(req, req.tent.model.permissions );
 			for(let i in q)
-				req.tent.needle.set(i,q[i]);
+			{
+				if(await ModelInstance._onEditField(i,q,req,res)) // put events here
+					req.tent.needle.set(i,q[i]);
+			}
 			next();
 		},
 
