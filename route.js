@@ -46,6 +46,7 @@ mw.look = function(val)
 mw.Model = function(model,config,bad)
 {
 	let ModelSchema = Schema.get(model);
+	let ModelInstance = Schema.all()[model];
 	let POPULATE = ModelSchema.config.populate;
 	let DEEP 	 = ModelSchema.config.deep;
 	let FILLED 	 = ModelSchema.config.filled;
@@ -104,8 +105,90 @@ mw.Model = function(model,config,bad)
 				config(req, res, next);
 			}
 		},
-		list : function(req,res,next)
+		reverse_populate: async function(req,res,next)
 		{
+			let where = req.tent.param.where;
+
+			async function populate(query,path)
+			{
+				let populatePath = query.__field;
+				let refpath  = ModelInstance._trimSpareField( path , populatePath );
+
+				let refname  = ModelInstance._getRef( populatePath );
+				if(!refname)
+					return res.send({ err: 'Database Error. Filter path definiton is wrong.' , code: 500 });
+				
+
+				let ForeignModel = Schema.get(refname);
+				let selectvalue = ModelInstance._getPopulateProjection(populatePath);
+				
+				let filter = {};
+				filter[refpath] = query.val;
+				let docs = await ForeignModel.find(  filter , selectvalue ).exec();
+				docs =docs.map((val)=>val._id);
+
+				return docs;
+			}
+
+			for(let path in where)
+			{
+				let query = where[path];
+
+				if(path =="$or")
+				{					
+					let q = [];
+					for(let x of query.val)
+					{	
+						for(let i in x)
+						{
+							x.field = i; 
+							x.val = x[i];
+							delete x[i];
+						}
+						let populatePath = ModelInstance._constainsFieldRef(x.field);
+						x.__field = populatePath;
+						if(populatePath)
+						{
+							let docs = await populate(x,x.field);
+							let m = {};
+							m[ x.__field ] = { $in : docs };
+							q.push(m);
+						}
+						else
+						{
+							let a = {};
+							a[x.field] = x.val;
+							q.push(a);
+						}
+						
+					}
+					req.tent.param.filter.$or = q;
+				}
+				else
+				{
+					let docs = [];
+					docs = await populate(query,path);
+					req.tent.param.filter[query.__field] = 
+					{
+						$in : docs
+					}  
+				}
+
+			}
+		},
+
+		list : async function(req,res,next)
+		{
+
+			//If reverse population is needed
+			if(Object.keys(req.tent.param.where).length)
+			{
+				await a.reverse_populate(req,res,next);
+			}
+
+
+
+
 			let q = ModelSchema.find(
 				req.tent.param.filter,
 				req.tent.param.fields.join(' ')
@@ -177,6 +260,20 @@ mw.Model = function(model,config,bad)
 			req.tent.param.fields = util.fields(req, req.tent.model.permissions );
 			req.tent.param.sort   = util.sort  (req, req.tent.model.permissions );
 			req.tent.param.filter = util.filter(req, req.tent.model.permissions );
+
+			//get post populated filter
+			let where = {};
+			for( let i in req.tent.param.filter )
+			{
+				let field = ModelInstance._constainsFieldRef(i); 
+				if( field || i=="$or" )
+				{
+					where[i] = { val : req.tent.param.filter[i]};
+					delete req.tent.param.filter[i];
+					where[i].__field = field; 
+				}
+			}
+			req.tent.param.where = where;
 			
 			req.tent.param.options = req.query.option;
 			req.tent.param.limit   =  (req.query.limit  || 10)-1+1;

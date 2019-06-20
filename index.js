@@ -4,6 +4,8 @@ const express = require('express')
 module.exports.Model = Model;
 module.exports.Route = require('./route.js');
 
+var Builder = require("./builder.js");
+
 const mw = module.exports.Route;
 
 module.exports.init = function(app,done)
@@ -16,6 +18,22 @@ module.exports.init = function(app,done)
 
 		if(models[i].mw.length)
 		nrouter.use( models[i].mw );
+		
+		//use methods
+		for(let method of models[i].methods_route)
+		{
+			let pipes = Builder.new(method.type,i).preInit().init().model(i).postInit().parseParams();
+
+			if(method.local)
+				pipes.load();
+			
+			let path = (method.local ? "/:id/method/" : "/method/"  );
+			nrouter[method.type]
+			( 
+				path + method.name  ,
+			 	method.definition( pipes , Builder.new(method.type))
+			);
+		}
 
 		if(!models[i].router)
 		models[i].router = function(route)
@@ -42,6 +60,9 @@ module.exports.init = function(app,done)
 
 		if(models[i].routerExtend)
 			models[i].routerExtend(nrouter);
+
+
+
 		router.use('/'+i.toLowerCase(),nrouter);
 	}
 

@@ -12,6 +12,7 @@ class Model
 		this.mw 	= [];
 		this.mwAPI  = [[],[],[],[]];
 		this.mwAfterModelInit = [];
+		this.methods_route = [];
 
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
 
@@ -143,7 +144,87 @@ class Model
 		return this;
 	}
 
+	method(name,type="get",cb)
+	{
+		if(type=="list") type = "get";
+		this.methods_route.push({ name: name, definition: cb, type: type, local: true});
+		return this;
+	}
 
+	staticMethod(name,type="get",cb)
+	{
+		if(type=="list") type = "get";
+		this.methods_route.push({ name: name, definition: cb, type: type, local: false});
+		return this;
+	}
+
+
+
+	_constainsFieldRef(field)
+	{
+		for(let f in this.populate )
+			if( field.indexOf(f) == 0 )
+				return f;
+
+		return false;
+	}
+
+	_getDef(field)
+	{
+		let paths =  field.split(".");
+		let current = this.schema;
+
+		for(let path of paths)
+		{
+			current = current[path];
+
+			if(current.constructor === Array)
+				current = current[0];
+			if(!current)
+				return false;
+		}
+		return current;
+	}
+
+	_getRef(field)
+	{
+		let obj  = this._getDef(field);
+		if(!obj)
+			return false;
+		return obj.ref;
+	}
+
+	_trimSpareField(field,populateField)
+	{
+		console.log(field,populateField);
+		field 			= field.split(".");
+		populateField	= populateField.split(".");
+
+		while(populateField.length)
+		{
+			field.shift();
+			populateField.shift();
+		}
+
+		return field.join(".");
+	}
+
+	_getPopulateProjection(path)
+	{
+		if( typeof this.populate[path] == "string" )
+			return this.populate[path];
+		else
+			return this.populate[path].select;
+	}
+}
+
+
+class Field
+{
+	constructor()
+	{
+		
+	}
 }
 
 
