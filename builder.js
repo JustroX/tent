@@ -31,8 +31,6 @@ class RouteBuilder
 
 	preInit()
 	{
-		console.log(this.request);
-		console.log(mw.Universal(this.model_str,this.request).length);
 		this.pipes.push(...mw.Universal(this.model_str,this.request));
 		return this;
 	}
@@ -142,10 +140,17 @@ class RouteBuilder
 		return this;
 	}
 
+	emit()
+	{ 
+		this.pipes.push(this.mw_model.emit);
+		return this;
+	}
+
 	build()
 	{
 		return mw.make(null,...this.pipes);
 	}
+
 
 }
 

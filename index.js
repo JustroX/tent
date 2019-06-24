@@ -31,7 +31,7 @@ module.exports.init = function(app,done)
 			nrouter[method.type]
 			( 
 				path + method.name  ,
-			 	method.definition( pipes , Builder.new(method.type))
+			 	method.definition( pipes , Builder.new(method.type,i))
 			);
 		}
 

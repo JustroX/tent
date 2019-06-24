@@ -1,7 +1,18 @@
 var Schema  = require('./schema.js');
+var safe = require('safe-regex');
 
 const mw = module.exports;
 
+const MODEL_ACTION_ENUM = 
+{
+	INITIALIZED : 0,
+	FETCHED     : 1,
+	LOADED  	: 2,
+	NEW     	: 3,
+	DELETE		: 4,
+	SAVE		: 5
+}
+Object.freeze(MODEL_ACTION_ENUM)
 
 //utilities
 mw.util = {};
@@ -61,15 +72,20 @@ mw.Model = function(model,config,bad)
 			req.tent.model.deep     = DEEP;
 			req.tent.model.filled   = FILLED;
 			req.tent.model.permissions = PERMISSIONS;
+			req.tent.model.ACTION = MODEL_ACTION_ENUM.INITIALIZED;
+			req.tent.model.instance = ModelInstance;
+			req.tent.model.mongoose = ModelSchema;
 			next();
 		},
 		create : function(req,res,next)
 		{
 			req.tent.needle = new ModelSchema();
+			req.tent.model.ACTION = MODEL_ACTION_ENUM.NEW;
 			next();
 		},
 		load : function(req,res,next)
 		{
+			req.tent.model.ACTION = MODEL_ACTION_ENUM.LOADED;
 			let doc_id = req.tent.id;
 			let q = ModelSchema.find({_id: doc_id},req.tent.param.fields.join(' '));
 
@@ -91,6 +107,7 @@ mw.Model = function(model,config,bad)
 		},
 		save: function(req,res,next)
 		{
+			req.tent.model.ACTION = MODEL_ACTION_ENUM.SAVE;
 			req.tent.needle.save(function(err,new_model)
 			{
 				if(err) return res.send({ err: "Database Error" , code : 500 });
@@ -180,6 +197,7 @@ mw.Model = function(model,config,bad)
 		list : async function(req,res,next)
 		{
 
+			req.tent.model.ACTION = MODEL_ACTION_ENUM.FETCHED;
 			//If reverse population is needed
 			if(Object.keys(req.tent.param.where).length)
 				await a.reverse_populate(req,res,next);
@@ -252,6 +270,7 @@ mw.Model = function(model,config,bad)
 		},
 		delete: function(req,res,next)
 		{
+			req.tent.model.ACTION = MODEL_ACTION_ENUM.DELETE;
 			ModelSchema.deleteOne({ _id: req.tent.id },function(err)
 			{
 				if(err) return res.send({ err : "Unknown Error", code: 500 });
@@ -265,8 +284,8 @@ mw.Model = function(model,config,bad)
 			let q = util.sanitize(req, req.tent.model.permissions );
 			for(let i in q)
 			{
-				if(await ModelInstance._onEditField(i,q,req,res)) // put events here
-					req.tent.needle.set(i,q[i]);
+				let assign = function(){ req.tent.needle.set(i,q[i]);}
+				if(!await ModelInstance._onEditField(i,q,req,res,assign)) return;// put events here
 			}
 			next();
 		},
@@ -289,7 +308,7 @@ mw.Model = function(model,config,bad)
 			for( let i in req.tent.param.filter )
 			{
 				let field = ModelInstance._constainsFieldRef(i); 
-				if( field || i=="$or" )
+				if( (field && field!=i ) || i=="$or" )
 				{
 					where[i] = { val : req.tent.param.filter[i]};
 					delete req.tent.param.filter[i];
@@ -342,6 +361,17 @@ mw.Model = function(model,config,bad)
 			next();
 		},
 
+		emit: function(req,res,next)
+		{
+			let action = req.tent.model.ACTION;
+			if(action == MODEL_ACTION_ENUM.SAVE )
+				req.tent.model.instance.events.emit("save",req,res,next);
+			else if (action == MODEL_ACTION_ENUM.DELETE)
+				req.tent.model.instance.events.emit("delete",req,res,next);
+			else
+				next();
+		}
+
 	};
 
 	return a;
@@ -389,6 +419,7 @@ mw.api.post = function(model,...mc)
 						 mw_model.save,
 						 ...mc,
 						 mw_model.hideFields,
+						 mw_model.emit ,
 						 mw_model.done );
 }
 
@@ -405,6 +436,7 @@ mw.api.put = function(model,...mc)
 						 mw_model.save,
 						 ...mc,
 						 mw_model.hideFields,
+						 mw_model.emit ,
 						 mw_model.done );
 }
 
@@ -433,6 +465,7 @@ mw.api.get = function(model,...mc)
 						 mw_model.load,
 						 ...mc,
 						 mw_model.hideFields,
+						 mw_model.emit ,
 						 mw_model.done );
 }
 
@@ -447,6 +480,7 @@ mw.api.delete = function(model,...mc)
 						 mw_model.load,
 						 mw_model.delete,
 						 ...mc,
+						 mw_model.emit ,
 						 mw_model.done );
 }
 
@@ -730,6 +764,10 @@ var util =
 					{
 						let b = subfields[j].split(":");
 						let a = {};
+
+						if(!safe_regex(b[1]))
+							continue;
+
 						a[b[0]] = { $regex: new RegExp(b[1]) , $options: 'i' };
 						item.or.push(a);
 					}
@@ -742,6 +780,8 @@ var util =
 				else
 				if(val.length==1 && val[0].substring(0,3)=="rx_")
 				{
+					if(!safe_regex(val[0].substring(3)))
+						continue;
 					item.regex = val[0].substring(3);
 				}
 				else

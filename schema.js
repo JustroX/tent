@@ -17,6 +17,26 @@ function isAsync (func) {
     );
 }
 
+class Event
+{
+	constructor()
+	{
+		this.events = {};
+	}
+
+	async emit(str,...args)
+	{
+		if(!this.events[str])
+			return args[args.length-1]();
+		return this.events[str](...args);
+	}
+
+	on(str,cb)
+	{
+		this.events[str] = cb;
+	}
+}
+
 class Model
 {
 	constructor(name)
@@ -33,6 +53,8 @@ class Model
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
 
 		Models[name] = this;
+
+		this.events = new Event();
 	}
 
 	define(raw)
@@ -147,7 +169,6 @@ class Model
 
 	useAPI(mw,num)
 	{
-		console.log(num);
 		if(mw)
 		this.mwAPI[num].push(mw);
 
@@ -212,7 +233,6 @@ class Model
 
 	_trimSpareField(field,populateField)
 	{
-		console.log(field,populateField);
 		field 			= field.split(".");
 		populateField	= populateField.split(".");
 
@@ -246,11 +266,14 @@ class Model
 		return this;
 	}
 
-	async _onEditField(i,body,req,res)
+	async _onEditField(i,body,req,res,assign)
 	{
 		if(!this.fields[i])
+		{
+			assign();
 			return true;
-		return await this.fields[i](body[i],req,res,body);
+		}
+		return await this.fields[i](body[i],req,res,assign,body);
 	}
 }
 
