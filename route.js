@@ -765,7 +765,7 @@ var util =
 						let b = subfields[j].split(":");
 						let a = {};
 
-						if(!safe_regex(b[1]))
+						if(!safe(b[1]))
 							continue;
 
 						a[b[0]] = { $regex: new RegExp(b[1]) , $options: 'i' };
@@ -780,7 +780,7 @@ var util =
 				else
 				if(val.length==1 && val[0].substring(0,3)=="rx_")
 				{
-					if(!safe_regex(val[0].substring(3)))
+					if(!safe(val[0].substring(3)))
 						continue;
 					item.regex = val[0].substring(3);
 				}
