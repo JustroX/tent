@@ -9,6 +9,6 @@
   "author": "Justine Che T. Romero",
   "license": "ISC",
   "dependencies": {
-    "safe-regex": "^2.0.2"
+    "safe-regex": "^2.0.3"
   }
 }

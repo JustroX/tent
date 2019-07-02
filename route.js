@@ -418,8 +418,8 @@ mw.api.post = function(model,...mc)
 						 mw_model.assignBody,
 						 mw_model.save,
 						 ...mc,
-						 mw_model.hideFields,
 						 mw_model.emit ,
+						 mw_model.hideFields,
 						 mw_model.done );
 }
 
@@ -435,8 +435,8 @@ mw.api.put = function(model,...mc)
 						 mw_model.assignBody,
 						 mw_model.save,
 						 ...mc,
-						 mw_model.hideFields,
 						 mw_model.emit ,
+						 mw_model.hideFields,
 						 mw_model.done );
 }
 
@@ -464,8 +464,8 @@ mw.api.get = function(model,...mc)
 						 mw_model.parseParams,
 						 mw_model.load,
 						 ...mc,
-						 mw_model.hideFields,
 						 mw_model.emit ,
+						 mw_model.hideFields,
 						 mw_model.done );
 }
 
