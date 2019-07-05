@@ -68,6 +68,7 @@ class Model
 		this.fill        = raw.fill;
 		this.config		 = raw.config;
 		this.methods     = raw.methods;
+		this.statics     = raw.statics;
 		this.virtual     = raw.virtual;
 		this.endpoints     = raw.endpoints;
 
@@ -83,7 +84,7 @@ class Model
 		//methods
 		for(let i in this.methods)	this.mongoose_schema.methods[i] = this.methods[i];
 		//static
-		for(let i in this.static)	this.mongoose_schema.static[i] = this.static[i];
+		for(let i in this.statics)	this.mongoose_schema.statics[i] = this.statics[i];
 		//virtuals
 		for(let i in this.virtual)
 		{
@@ -199,8 +200,14 @@ class Model
 
 	_constainsFieldRef(field)
 	{
+		let contains_dot = field.indexOf(".") >=0;
+		if(!contains_dot)
+			return false;
+
+		let first_field = field.split(".")[0];
+
 		for(let f in this.populate )
-			if( field.indexOf(f) == 0 )
+			if( first_field == f )
 				return f;
 
 		return false;
