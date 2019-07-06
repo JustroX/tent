@@ -31,13 +31,17 @@ class RouteBuilder
 
 	preInit()
 	{
+		//@Deprecate
 		this.pipes.push(...mw.Universal(this.model_str,this.request));
+		this.pipes.push(...mw.pre(this.model_str));
 		return this;
 	}
 
 	postInit()
 	{
+		//@Deprecate
 		this.pipes.push(...mw.UniversalAfter(this.model_str,this.request));
+		this.pipes.push(...mw.post(this.model_str));
 		return this;
 	}
 

@@ -377,16 +377,30 @@ mw.Model = function(model,config,bad)
 	return a;
 }
 
+//@DEPRECATE
 mw.Universal = function(model,key)
 {
 	let ModelObj = Schema.all()[model];
 	return ModelObj.mwAPI[key]
 }
 
+//@DEPRECATE
 mw.UniversalAfter = function(model)
 {
 	let ModelObj = Schema.all()[model];
 	return ModelObj.mwAfterModelInit;
+}
+
+//Updated middleware
+mw.pre = function(model)
+{
+	let ModelObj = Schema.all()[model];
+	return ModelObj.pre_mw;
+}
+mw.post = function(model)
+{
+	let ModelObj = Schema.all()[model];
+	return ModelObj.post_mw;
 }
 
 //default API  functions
@@ -409,10 +423,17 @@ mw.api.post = function(model,...mc)
 {
 
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,1),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,1),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 mw_model.validateFields,
 						 mw_model.create,
 						 mw_model.assignBody,
@@ -426,10 +447,17 @@ mw.api.post = function(model,...mc)
 mw.api.put = function(model,...mc)
 {
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,2),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,2),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.assignBody,
@@ -443,10 +471,17 @@ mw.api.put = function(model,...mc)
 mw.api.list = function(model,...mc)
 {
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,0),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,0),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 mw_model.parseParams,
 						 mw_model.list,
 						 mw_model.hideFieldsList,
@@ -457,10 +492,17 @@ mw.api.list = function(model,...mc)
 mw.api.get = function(model,...mc)
 {
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,0),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,0),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 mw_model.parseParams,
 						 mw_model.load,
 						 ...mc,
@@ -472,10 +514,17 @@ mw.api.get = function(model,...mc)
 mw.api.delete = function(model,...mc)
 {
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,3),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,3),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.delete,
@@ -617,10 +666,17 @@ mw.Endpoint = function(model,endpoint,config,bad)
 mw.api.endpoint.list = function(model,endpoint,...mc)
 {
 	let ep = mw.Endpoint(model,endpoint);
-	return mw.make(null, ...mw.Universal(model,2),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,2),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 ep.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 ep.prepare,
 						 ep.list,
 						 // ...mc,
@@ -630,10 +686,17 @@ mw.api.endpoint.list = function(model,endpoint,...mc)
 mw.api.endpoint.get = function(model,endpoint,...mc)
 {
 	let ep = mw.Endpoint(model,endpoint);
-	return mw.make(null, ...mw.Universal(model,2),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,2),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 ep.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 ep.prepare,
 						 ep.load,
 						 ...mc,
@@ -644,10 +707,17 @@ mw.api.endpoint.post = function(model,endpoint,...mc)
 {
 	let ep = mw.Endpoint(model,endpoint);
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,2),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,2),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 ep.prepare,
 						 ep.validateFields,
 						 ep.create,
@@ -663,10 +733,17 @@ mw.api.endpoint.put = function(model,endpoint,...mc)
 {
 	let ep = mw.Endpoint(model,endpoint);
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,2),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,2),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 ep.prepare,
 						 ep.load,
 						 ep.assignBody,
@@ -683,10 +760,17 @@ mw.api.endpoint.delete = function(model,endpoint,...mc)
 	
 	let ep = mw.Endpoint(model,endpoint);
 	let mw_model = mw.Model(model);
-	return mw.make(null, ...mw.Universal(model,2),
+	return mw.make(null,
+						//@DEPRECATE 
+						...mw.Universal(model,2),
+						
 						 mw.api.init,
+						...mw.pre(model),
 						 mw_model.init,
+						
+						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
+						...mw.post(model),
 						 ep.prepare,
 						 ep.load,
 						 ep.delete,

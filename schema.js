@@ -2,6 +2,7 @@
 var mongoose  = require('mongoose');
 var Schema = mongoose.Schema;
 var Models =  {};
+var Plugin = require("./plugin.js");
 
 function isAsync (func) {
     const string = func.toString().trim();
@@ -39,22 +40,59 @@ class Event
 
 class Model
 {
-	constructor(name)
+	//CORE FUNCTIONS
+
+	constructor(name,options={})
 	{
 		this.name = name;
 		this.schema = {};
+		this.methods_route = [];
+		this.events = new Event();
+		this.fields = {};
+
+		//@DEPRECATE Private variable to be deprecated soon
 		this.mw 	= [];
 		this.mwAPI  = [[],[],[],[]];
 		this.mwAfterModelInit = [];
-		this.methods_route = [];
 
-		this.fields = {};
+		this.pre_mw  = [];
+		this.post_mw = [];
 
 		if(Models[name]) throw new Error("ERR: SCHEMA "+name+" is already defined");
-
 		Models[name] = this;
 
-		this.events = new Event();
+		//import default plugins
+
+		if(options.cache)
+		{
+			let cache_options = options.cache;
+			this.install( require("./plugins/redis/cacher.js").plugin(cache_options) );
+		}
+		if(options.socket)
+		{
+			let socket_options = options.socket;
+			this.install( require("./plugins/socket/socket.js").plugin(socket_options) );
+		}
+		if(options.channel)
+		{
+			let channel_options = options.channel;
+			this.install( require("./plugins/redis/channel.js").plugin(channel_options) );
+		}
+	}
+
+	install( plugin )
+	{
+		//plugins are methods emebeded in the model
+		if(!this.isNamespaceAvailable(plugin.plugin_name))
+			return new Error("ERR: Plugin Failure. Plugin is already installed or namespace is unavailable.");
+
+		this[plugin.plugin_name] = Plugin(this,plugin);
+		return true;	
+	}
+
+	isNamespaceAvailable(namespace)
+	{
+		return !this[namespace];
 	}
 
 	define(raw)
@@ -139,6 +177,7 @@ class Model
 		return this;
 	}
 
+	//overriding routes
 	route(cb)
 	{
 		this.router = cb;
@@ -151,8 +190,14 @@ class Model
 		return this;
 	}
 
+	//Middlewares
+
+
+
+	//@DEPRECATE Functions to be deprecated soon
 	use(mw,...args)
 	{
+		console.log("TENT: WARNING TentModel.use() will be deprecated soon. Please use TentModel.pre() or TentModel.post() instead.")
 		if(typeof mw == "string")
 		{
 			if(mw=='before init')
@@ -170,6 +215,7 @@ class Model
 
 	useAPI(mw,num)
 	{
+		console.log("TENT: WARNING TentModel.useAPI() will be deprecated soon. Please use TentModel.pre() instead.");
 		if(mw)
 		this.mwAPI[num].push(mw);
 
@@ -177,10 +223,25 @@ class Model
 	}
 	useAPIafter(mw)
 	{
+		console.log("TENT: WARNING TentModel.useAPIafter() will be deprecated soon. Please use TentModel.post() instead.");
 		if(mw)
 			this.mwAfterModelInit.push(mw);
 		return this;
 	}
+
+	//updated middleware functions
+	pre(...args)
+	{
+		this.pre_mw.push(...args);
+	}
+	post(...args)
+	{
+		this.post_mw.push(...args);
+	}
+
+
+
+	//Having methods and statics in routes
 
 	method(name,type="get",cb)
 	{
@@ -197,7 +258,7 @@ class Model
 	}
 
 
-
+	//private variables / utility functions
 	_constainsFieldRef(field)
 	{
 		let contains_dot = field.indexOf(".") >=0;
@@ -260,6 +321,9 @@ class Model
 			return this.populate[path].select;
 	}
 
+
+
+	//Field Listeners 
 	fieldListen(field,cb)
 	{
 		async function exec(...args)
@@ -290,9 +354,9 @@ module.exports.get = function(model_name)
 	return Models[model_name].mongoose_model;
 }
 
-module.exports.new = function( model_name )
+module.exports.new = function( model_name ,options )
 {
-	return new Model(model_name);
+	return new Model(model_name , options);
 }
 
 module.exports.all = function()

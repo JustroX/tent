@@ -22,7 +22,7 @@ module.exports.init = function(app,done)
 		//use methods
 		for(let method of models[i].methods_route)
 		{
-			let pipes = Builder.new(method.type,i).preInit().init().model(i).postInit().parseParams();
+			let pipes = Builder.new(method.type,i).init().preInit().model(i).postInit().parseParams();
 
 			if(method.local)
 				pipes.load();

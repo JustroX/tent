@@ -1,4 +1,5 @@
 // Query builder
+// might take a while to finish this
 // this is specifically for LIST request
 /*
 	Basically i'd like to use this command

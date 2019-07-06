@@ -2,3 +2,5 @@ node_modules/
 config/
 test.js
 passport.js
+test-socket.js
+test.html
