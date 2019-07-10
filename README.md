@@ -1,5 +1,5 @@
 # justrox-tent
-MEAN stack API framework.
+REST API framework.
 Automatically creates API endpoints for Mongoose models.
 
 ### Installation
