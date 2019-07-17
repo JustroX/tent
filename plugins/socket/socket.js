@@ -49,7 +49,7 @@ class SocketPlugin
 	//utilities
 	_middlewares_flow(_mws,...args)
 	{
-		let mws = _mws;
+		let mws = [..._mws];
 		let end = args.pop();
 
 		function next()

@@ -926,12 +926,12 @@ var util =
 	sanitize : function(req,permissions)
 	{
 		let body = req.body;
-
+		let key = ( req.method == "POST" )? 2 : 4;
 		let query = {};
 
 		for(let i in body)
 		{
-			if(permissions[i]&4)
+			if(permissions[i]& key)
 			{
 				query[i] = body[i];
 			}
