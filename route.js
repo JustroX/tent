@@ -454,11 +454,11 @@ mw.api.put = function(model,...mc)
 						 mw.api.init,
 						...mw.pre(model),
 						 mw_model.init,
+						 mw_model.parseParams,
 						
 						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
 						...mw.post(model),
-						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.assignBody,
 						 mw_model.save,
@@ -478,11 +478,11 @@ mw.api.list = function(model,...mc)
 						 mw.api.init,
 						...mw.pre(model),
 						 mw_model.init,
+						 mw_model.parseParams,
 						
 						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
 						...mw.post(model),
-						 mw_model.parseParams,
 						 mw_model.list,
 						 mw_model.hideFieldsList,
 						 // ...mc,
@@ -499,11 +499,11 @@ mw.api.get = function(model,...mc)
 						 mw.api.init,
 						...mw.pre(model),
 						 mw_model.init,
+						 mw_model.parseParams,
 						
 						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
 						...mw.post(model),
-						 mw_model.parseParams,
 						 mw_model.load,
 						 ...mc,
 						 mw_model.emit ,
@@ -521,11 +521,11 @@ mw.api.delete = function(model,...mc)
 						 mw.api.init,
 						...mw.pre(model),
 						 mw_model.init,
+						 mw_model.parseParams,
 						
 						//@DEPRECATE
 						 ...mw.UniversalAfter(model),
 						...mw.post(model),
-						 mw_model.parseParams,
 						 mw_model.load,
 						 mw_model.delete,
 						 ...mc,
@@ -891,7 +891,9 @@ var util =
 		{
 			if(i.or)
 			{
-				query["$or"] = i.or;
+				if(!query["$or"])
+					query["$or"] = [];
+				query["$or"].push(...i.or);
 			}
 			else
 			if(i.regex)
