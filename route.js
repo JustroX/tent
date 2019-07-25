@@ -98,7 +98,11 @@ mw.Model = function(model,config,bad)
 
 			q.exec(function(err,model)
 			{
-				if(err) return res.send({ err: "Database Error" , code : 500 });
+				if(err)
+				{
+					throw err;
+				 	return res.send({ err: "Database Error" , code : 500 });
+				}
 				if(!model[0]) return res.send({ err: "Document not found.", code: 404});
 
 				req.tent.needle = model[0];
@@ -110,7 +114,11 @@ mw.Model = function(model,config,bad)
 			req.tent.model.ACTION = MODEL_ACTION_ENUM.SAVE;
 			req.tent.needle.save(function(err,new_model)
 			{
-				if(err) return res.send({ err: "Database Error" , code : 500 });
+				if(err)
+				{
+					throw err;
+				 	return res.send({ err: "Database Error" , code : 500 });
+				}
 				req.tent.needle = new_model;
 				next();
 			});
@@ -230,7 +238,11 @@ mw.Model = function(model,config,bad)
 			else
 			q.exec(function(err,docs)
 			{
-				if(err) return res.send({ err: "Database Error" , code: 500 });
+				if(err)
+				{
+					throw err;
+				 	return res.send({ err: "Database Error" , code: 500 });
+				}
 				
 				function getfield(obj,field)
 				{
@@ -273,7 +285,11 @@ mw.Model = function(model,config,bad)
 			req.tent.model.ACTION = MODEL_ACTION_ENUM.DELETE;
 			ModelSchema.deleteOne({ _id: req.tent.id },function(err)
 			{
-				if(err) return res.send({ err : "Unknown Error", code: 500 });
+				if(err)
+				{
+					throw err;
+				 	return res.send({ err : "Unknown Error", code: 500 });
+				}
 				req.tent.needle = { message: "success", code: "200" };
 				next();
 			});
@@ -570,7 +586,11 @@ mw.Endpoint = function(model,endpoint,config,bad)
 
 			q.exec(function(err,model)
 			{
-				if(err) return res.send({ err: "Database Error" , code : 500 });
+				if(err)
+				{
+					throw err;
+				 	return res.send({ err: "Database Error" , code : 500 });
+				}
 				if(!model[0]) return res.send({ err: "Document not found.", code: 404});
 
 				req.tent.needle = model[0];
