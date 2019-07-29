@@ -882,6 +882,11 @@ var util =
 					item.set = new Date(val[0].substring(3));
 				}
 				else
+				if(val.length==1 && val[0].substring(0,3)=="bl_")
+				{
+					item.set = val[0].substring(3)=="true";
+				}
+				else
 				if(val.length==1 && val[0].substring(0,3)=="rx_")
 				{
 					if(!safe(val[0].substring(3)))
