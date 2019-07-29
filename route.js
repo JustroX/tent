@@ -87,6 +87,10 @@ mw.Model = function(model,config,bad)
 		{
 			req.tent.model.ACTION = MODEL_ACTION_ENUM.LOADED;
 			let doc_id = req.tent.id;
+
+			if(!doc_id)
+				return res.send({ code: 404, err: "No resource to run method." });
+
 			let q = ModelSchema.find({_id: doc_id},req.tent.param.fields.join(' '));
 
 			for(let i in req.tent.model.populate)
@@ -884,7 +888,7 @@ var util =
 				else
 				if(val.length==1 && val[0].substring(0,3)=="bl_")
 				{
-					item.set = val[0].substring(3)=="true";
+					item.set = (val[0].substring(3)=="true");
 				}
 				else
 				if(val.length==1 && val[0].substring(0,3)=="rx_")
@@ -931,7 +935,7 @@ var util =
 				query[i.field] = { $ne: i.ne };
 			}
 			else
-			if(i.set)
+			if(i.set || i.set===false)
 			{
 				if(i.set=="$n_null")
 					query[i.field] = null ;
