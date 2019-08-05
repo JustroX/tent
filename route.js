@@ -881,6 +881,20 @@ var util =
 					}
 				}
 				else
+				if(i=="or")
+				{
+					let subfields  = val[0].split(",");
+					item.or = [];
+					for(let j in subfields)
+					{
+						let b = subfields[j].split(":");
+						let a = {};
+
+						a[b[0]] = b[1];
+						item.or.push(a);
+					}
+				}
+				else
 				if(val.length==1 && val[0].substring(0,3)=="dt_")
 				{
 					item.set = new Date(val[0].substring(3));
