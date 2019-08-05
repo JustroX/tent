@@ -860,14 +860,15 @@ var util =
 		let filters = [];	
 		for(var i in req.query)
 		{
-			if(i=="search" || (permissions[i.split(".")[0]] &1) || (permissions[i] && permissions[i]&1))
+			if(i=="search" || i=="or" || (permissions[i.split(".")[0]] &1) || (permissions[i] && permissions[i]&1))
 			{
 				let val = req.query[i].split("..");
 				let item = { field: i };
 				if(i=="search")
 				{
 					let subfields  = val[0].split(",");
-					item.or = [];
+					if(!item.or)
+						item.or = [];
 					for(let j in subfields)
 					{
 						let b = subfields[j].split(":");
@@ -884,7 +885,8 @@ var util =
 				if(i=="or")
 				{
 					let subfields  = val[0].split(",");
-					item.or = [];
+					if(!item.or)
+						item.or = [];
 					for(let j in subfields)
 					{
 						let b = subfields[j].split(":");
