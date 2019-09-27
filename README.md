@@ -1,7 +1,7 @@
 # justrox-tent
 REST API framework.
 Automatically creates API endpoints for Mongoose models.
-
+**This will be deprecated. Please use [tent-dome](https://github.com/justrox/tent-dome.git) instead.**
 ### Installation
 
 ```
